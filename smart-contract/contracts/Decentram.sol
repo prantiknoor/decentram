@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 contract Decentram {
-    uint64 postCount = 0;
+    uint64 public postCount = 0;
     mapping(uint64 => Post) public posts;
     mapping(uint64 => mapping(address => int8)) reactionsOfPost;
 
@@ -33,7 +33,7 @@ contract Decentram {
 
     function reactOnPost(uint64 _id, bool _like) isPostExist(_id) external {
         // User can react only for one time
-        require(reactionsOfPost[_id][msg.sender] == 0);
+        require(reactionsOfPost[_id][msg.sender] == 0, "You have already reacted on this post");
 
         if(_like) {
             posts[_id].likes++;
