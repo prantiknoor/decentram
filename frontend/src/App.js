@@ -102,6 +102,26 @@ function App() {
     }
   };
 
+  const createPost = async () => {
+    try {
+      if(window.ethereum) {
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const signer = provider.getSigner();
+        const contract = new ethers.Contract(contractAddress, contractABI, signer);
+
+        const txn = await contract.createPost(inputValue.title, inputValue.description);
+        console.log('submitting your post...');
+        await txn.wait();
+        console.log('Your post has been submitted.');
+      } else {
+        console.log("Ethereum object not found, install Metamask.");
+        setError("Please install a wallet to use this app.");
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
   const reactOnPost = async (id, like) => {
     try {
       if (window.ethereum) {
