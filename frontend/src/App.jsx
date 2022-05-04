@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { ethers, utils } from "ethers";
+import "./style.css";
+import Logo from "./logo.svg";
 import abi from "./contracts/Decentram.json";
+import PostContainer from "./PostContainer";
 
 function App() {
   const [isWalletConnected, setIsWalletConnected] = useState(false);
@@ -21,7 +24,7 @@ function App() {
         });
         setCustomerAddress(accounts[0]);
         setIsWalletConnected(true);
-        console.log("Account connected to " + customerAddress);
+        console.log("Account connected to " + accounts[0]);
       } else {
         setError("Please install wallet to use out app");
         console.log("Failed to connect");
@@ -44,6 +47,8 @@ function App() {
 
         const _postCount = await contract.postCount();
         setPostCount(_postCount);
+
+        return _postCount;
       } else {
         console.log("Ethereum object not found, install Metamask.");
         setError("Please install a wallet to use this app.");
@@ -65,7 +70,7 @@ function App() {
     _postTime = _postTime.toLocaleString("en-US", _options);
 
     return _postTime;
-  }
+  };
 
   const getPost = async (id) => {
     try {
@@ -104,15 +109,27 @@ function App() {
 
   const createPost = async () => {
     try {
-      if(window.ethereum) {
+      if (window.ethereum) {
         const provider = new ethers.providers.Web3Provider(window.ethereum);
         const signer = provider.getSigner();
-        const contract = new ethers.Contract(contractAddress, contractABI, signer);
+        const contract = new ethers.Contract(
+          contractAddress,
+          contractABI,
+          signer
+        );
 
-        const txn = await contract.createPost(inputValue.title, inputValue.description);
-        console.log('submitting your post...');
+        const txn = await contract.createPost(
+          inputValue.title,
+          inputValue.description
+        );
+        console.log(inputValue);
+        console.log("submitting your post...");
         await txn.wait();
-        console.log('Your post has been submitted.');
+        console.log("Your post has been submitted.");
+
+        const _post = await getPost(postCount+1);
+        setPostCount(postCount+1);
+        setPosts((prevPosts) => [_post, ...prevPosts]);
       } else {
         console.log("Ethereum object not found, install Metamask.");
         setError("Please install a wallet to use this app.");
@@ -120,7 +137,7 @@ function App() {
     } catch (error) {
       console.log(error);
     }
-  }
+  };
 
   const reactOnPost = async (id, like) => {
     try {
@@ -148,7 +165,69 @@ function App() {
     }
   };
 
-  return <div></div>;
+  const getAllPost = async () => {
+    if(!isWalletConnected) return;
+
+    const _postCount = await getPostCount();
+
+    for (var id = 1; id <= _postCount; id++) {
+      const _post = await getPost(id);
+      setPosts((prevPosts) => [_post, ...prevPosts]);
+      console.log(_post);
+    }
+  };
+
+  useEffect(() => {
+    checkIfWalletIsConnected();
+    getAllPost();
+  }, [isWalletConnected])
+  
+
+  const handleInputChange = (event) => {
+    setInputValue((prevFormData) => ({
+      ...prevFormData,
+      [event.target.name]: event.target.value,
+    }));
+  };
+
+  return (
+    <div>
+      <header>
+        <nav>
+          <img src={Logo} alt="logo" />
+          <div className="address-bar">{customerAddress}</div>
+        </nav>
+      </header>
+      <br />
+      <div className="body">
+        <section id="input-area">
+          <input
+            type="text"
+            name="title"
+            placeholder="Enter title here..."
+            onChange={handleInputChange}
+          ></input>
+          <br />
+          <textarea
+            name="description"
+            id="description"
+            rows="4"
+            onChange={handleInputChange}
+            placeholder="Enter description here..."
+          ></textarea>
+          <br />
+          <button onClick={() => createPost()}>Submit</button>
+          <br />
+        </section>
+
+        <section>
+          <label>- Posts -</label>
+          <br />
+          {posts && posts.map((post) => PostContainer(post, reactOnPost))}
+        </section>
+      </div>
+    </div>
+  );
 }
 
 export default App;
